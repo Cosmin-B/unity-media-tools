@@ -60,7 +60,7 @@ def calculate_new_dimensions(width, height, max_dimension=3840):
     
     return new_width, new_height, needs_resize
 
-def resize_image(image_path, max_dimension=3840, quality=85):
+def resize_image(image_path, max_dimension=3840, quality=85, flip_vertical=False):
     """
     Resize an image to be divisible by 4 with 4K limit.
     
@@ -68,6 +68,7 @@ def resize_image(image_path, max_dimension=3840, quality=85):
         image_path (str): Path to the image file
         max_dimension (int): Maximum allowed dimension
         quality (int): JPEG quality for saving
+        flip_vertical (bool): Whether to flip PNG images vertically
     
     Returns:
         tuple: (original_size, new_size, dimensions_changed)
@@ -85,11 +86,21 @@ def resize_image(image_path, max_dimension=3840, quality=85):
                 original_width, original_height, max_dimension
             )
             
-            if not needs_resize:
+            # Check if we need to flip PNG images
+            needs_flip = flip_vertical and image_path.lower().endswith('.png')
+            
+            if not needs_resize and not needs_flip:
                 return original_file_size, original_file_size, False
             
-            # Resize image
-            resized_img = img.resize((new_width, new_height), Image.LANCZOS)
+            # Resize image if needed
+            if needs_resize:
+                resized_img = img.resize((new_width, new_height), Image.LANCZOS)
+            else:
+                resized_img = img.copy()
+            
+            # Flip image vertically if requested and it's a PNG
+            if needs_flip:
+                resized_img = resized_img.transpose(Image.FLIP_TOP_BOTTOM)
             
             # Prepare save parameters
             save_kwargs = {'optimize': True}
@@ -111,7 +122,7 @@ def resize_image(image_path, max_dimension=3840, quality=85):
         print(f"Error resizing {image_path}: {e}")
         return None, None, False
 
-def resize_images_in_directory(directory, max_dimension=3840, quality=85, recursive=True):
+def resize_images_in_directory(directory, max_dimension=3840, quality=85, recursive=True, flip_vertical=False):
     """
     Resize all images in a directory.
     
@@ -120,6 +131,7 @@ def resize_images_in_directory(directory, max_dimension=3840, quality=85, recurs
         max_dimension (int): Maximum allowed dimension
         quality (int): JPEG quality for saving
         recursive (bool): Whether to process subdirectories
+        flip_vertical (bool): Whether to flip PNG images vertically
     """
     directory = Path(directory)
     
@@ -164,17 +176,23 @@ def resize_images_in_directory(directory, max_dimension=3840, quality=85, recurs
                 original_width, original_height, max_dimension
             )
             
-            if not needs_resize:
+            # Check if we need to flip PNG images
+            needs_flip = flip_vertical and str(image_path).lower().endswith('.png')
+            
+            if not needs_resize and not needs_flip:
                 print(f"  Dimensions: {original_width}x{original_height} (already optimal)")
                 skipped_count += 1
                 continue
             
             print(f"  Original: {original_width}x{original_height}")
-            print(f"  New: {new_width}x{new_height}")
+            if needs_resize:
+                print(f"  New: {new_width}x{new_height}")
+            if needs_flip:
+                print(f"  Flipping PNG vertically")
             
             # Resize the image
             original_size, new_size, success = resize_image(
-                str(image_path), max_dimension, quality
+                str(image_path), max_dimension, quality, flip_vertical
             )
             
             if success and original_size is not None:
@@ -221,6 +239,8 @@ def main():
                        help='JPEG quality (1-100, default: 85)')
     parser.add_argument('--no-recursive', action='store_true', 
                        help='Do not process subdirectories')
+    parser.add_argument('--flip-png', action='store_true', 
+                       help='Flip PNG images vertically (useful for Unity texture coordinate conversion)')
     
     args = parser.parse_args()
     
@@ -255,15 +275,21 @@ def main():
                     original_width, original_height, args.max_dimension
                 )
                 
-                print(f"Original: {original_width}x{original_height}")
-                print(f"New: {new_width}x{new_height}")
+                # Check if we need to flip PNG images
+                needs_flip = args.flip_png and path.suffix.lower() == '.png'
                 
-                if not needs_resize:
+                print(f"Original: {original_width}x{original_height}")
+                if needs_resize:
+                    print(f"New: {new_width}x{new_height}")
+                if needs_flip:
+                    print("Flipping PNG vertically")
+                
+                if not needs_resize and not needs_flip:
                     print("Image already has optimal dimensions")
                     return
                 
                 original_size, new_size, success = resize_image(
-                    str(path), args.max_dimension, args.quality
+                    str(path), args.max_dimension, args.quality, args.flip_png
                 )
                 
                 if success and original_size is not None:
@@ -288,7 +314,8 @@ def main():
             str(path), 
             max_dimension=args.max_dimension,
             quality=args.quality,
-            recursive=not args.no_recursive
+            recursive=not args.no_recursive,
+            flip_vertical=args.flip_png
         )
     else:
         print(f"Path does not exist: {path}")

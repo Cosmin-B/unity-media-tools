@@ -14,6 +14,7 @@ Resizes images to have dimensions divisible by 4 (required for efficient texture
 - Supports PNG, JPG, JPEG
 - Recursive directory processing
 - In-place resizing with quality preservation
+- Optional PNG vertical flipping for Unity texture coordinate conversion
 
 **Usage:**
 ```bash
@@ -28,6 +29,9 @@ python resize_images.py /path/to/images/ --max-dimension 2048 --quality 90
 
 # Process only current directory (no subdirectories)
 python resize_images.py /path/to/images/ --no-recursive
+
+# Flip PNG images vertically (useful for Unity texture coordinates)
+python resize_images.py /path/to/images/ --flip-png
 ```
 
 ### 🗜️ compress_images.py

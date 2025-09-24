@@ -88,16 +88,51 @@ python convert_audio.py /path/to/audio/ --output-dir converted/
 python convert_audio.py audio.mp3
 ```
 
+### 📝 generate_srt_files.py
+Generates SRT subtitle files from audio using OpenAI Whisper speech recognition.
+
+**Features:**
+- Automatic speech recognition using Whisper AI
+- Multiple model sizes (tiny, base, small, medium, large)
+- Language detection or specific language selection
+- Batch processing for multiple files
+- Progress tracking and summary statistics
+- Properly formatted SRT with timestamps
+- Skip existing files to avoid reprocessing
+
+**Usage:**
+```bash
+# Generate SRT for all MP3 files in directory
+python generate_srt_files.py /path/to/audio/
+
+# Use specific Whisper model (base is default)
+python generate_srt_files.py /path/to/audio/ --model medium
+
+# Specify language (auto-detect by default)
+python generate_srt_files.py /path/to/audio/ --language en
+
+# Process single file
+python generate_srt_files.py audio.mp3
+
+# Output to different directory
+python generate_srt_files.py /path/to/audio/ --output subtitles/
+```
+
 ## Installation
 
 ### Prerequisites
 All scripts require Python 3.6+ and the following packages:
 
 ```bash
+# Basic dependencies for image and audio processing
 pip install Pillow pydub
+
+# For SRT generation (optional, only if using generate_srt_files.py)
+pip install torch torchvision torchaudio  # PyTorch
+pip install git+https://github.com/openai/whisper.git  # OpenAI Whisper
 ```
 
-For audio conversion, FFmpeg is also required:
+For audio conversion and SRT generation, FFmpeg is also required:
 - **macOS**: `brew install ffmpeg`
 - **Ubuntu/Debian**: `sudo apt install ffmpeg`
 - **Windows**: Download from [ffmpeg.org](https://ffmpeg.org/download.html)
@@ -108,8 +143,12 @@ For audio conversion, FFmpeg is also required:
 git clone git@github.com:Cosmin-B/unity-media-tools.git
 cd unity-media-tools
 
-# Install dependencies
+# Install basic dependencies
 pip install Pillow pydub
+
+# Optional: Install Whisper for SRT generation
+pip install torch torchvision torchaudio
+pip install git+https://github.com/openai/whisper.git
 
 # Make scripts executable (optional)
 chmod +x *.py
@@ -143,6 +182,11 @@ chmod +x *.py
 3. **Convert audio** to WebGL-compatible formats:
    ```bash
    python convert_audio.py Assets/Audio/ --format ogg
+   ```
+
+4. **Generate subtitles** from audio narration (optional):
+   ```bash
+   python generate_srt_files.py Assets/Audio/ --model base
    ```
 
 ## License
